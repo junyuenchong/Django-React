@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+frontend/dist/
+backend/staticfiles/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Env / secrets
+.env
+.env.*
+!backend/.env.example
+!frontend/.env.example
+
+# OS
+Thumbs.db
+ehthumbs.db
+
+# Cursor files
+.cursor/

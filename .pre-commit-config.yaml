@@ -1,0 +1,31 @@
+repos:
+  - repo: local
+    hooks:
+      - id: isort
+        name: backend isort (check)
+        entry: isort --check-only --diff
+        language: python
+        additional_dependencies: [isort]
+        files: ^backend/.*\.py$
+
+      - id: black
+        name: backend black (check)
+        entry: black --check --diff
+        language: python
+        additional_dependencies: [black]
+        files: ^backend/.*\.py$
+
+      - id: mypy
+        name: backend mypy (typecheck)
+        entry: mypy --config-file backend/pyproject.toml backend/apps backend/config
+        language: python
+        additional_dependencies: [mypy]
+        pass_filenames: false
+        always_run: true
+
+      - id: prettier
+        name: frontend prettier (check)
+        entry: npx prettier --check --config frontend/prettier.config.cjs
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|css|html|md|json)$
+

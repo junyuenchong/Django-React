@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+cd "$(dirname "$0")/.."
+
+npm run typecheck
+npm run format:check
+npm test -- --watchAll=false
+
