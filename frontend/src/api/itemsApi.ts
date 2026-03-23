@@ -35,6 +35,10 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
     const text = await res.text().catch(() => "");
     throw new ApiError(`Request failed: ${res.status} ${res.statusText}. ${text}`.trim(), res.status);
   }
+  // DELETE endpoints commonly return 204/205 with no response body.
+  if (res.status === 204 || res.status === 205) {
+    return undefined as T;
+  }
   // Be defensive: empty or non-JSON payloads should produce a clear error.
   try {
     return (await res.json()) as T;
