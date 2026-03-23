@@ -1,6 +1,8 @@
 import hashlib
 from typing import Any, Mapping, Optional
 
+from django.conf import settings
+
 from django.core.cache import cache
 from django.http import HttpRequest
 from rest_framework.response import Response
@@ -61,6 +63,32 @@ def make_items_list_cache_key(query_params: Any) -> str:
     return f"items:items:list:v{version}:{digest}"
 
 
+def resolve_items_list_cache_ttl_seconds(query_params: Any) -> int:
+    default_ttl = int(settings.ITEMS_LIST_CACHE_TTL_SECONDS)
+    search_ttl = int(settings.ITEMS_LIST_CACHE_TTL_SEARCH_SECONDS)
+    large_page_ttl = int(settings.ITEMS_LIST_CACHE_TTL_LARGE_PAGE_SECONDS)
+
+    if hasattr(query_params, "get"):
+        q = (query_params.get("q") or "").strip()
+        page_size_raw = query_params.get("page_size")
+    else:
+        q = ""
+        page_size_raw = None
+
+    if q:
+        return search_ttl
+
+    try:
+        page_size = int(page_size_raw) if page_size_raw else 0
+    except (TypeError, ValueError):
+        page_size = 0
+
+    if page_size > 10:
+        return large_page_ttl
+
+    return default_ttl
+
+
 class ItemService:
     def __init__(self, repository: Optional[ItemRepository] = None):
         self.repository = repository or ItemRepository()
@@ -71,7 +99,6 @@ class ItemService:
         request: HttpRequest,
         queryset,
         view,
-        cache_timeout_seconds: int = 60,
         pagination_class=ItemCursorPagination,
     ) -> Response:
         cache_key = make_items_list_cache_key(request.query_params)
@@ -90,7 +117,8 @@ class ItemService:
         response = paginator.get_paginated_response(serializer.data)
 
         try:
-            cache.set(cache_key, response.data, cache_timeout_seconds)
+            ttl_seconds = resolve_items_list_cache_ttl_seconds(request.query_params)
+            cache.set(cache_key, response.data, ttl_seconds)
         except Exception:
             # Ignore cache write failures.
             pass
@@ -117,5 +145,6 @@ __all__ = [
     "bump_items_list_cache_version",
     "get_items_list_cache_version",
     "make_items_list_cache_key",
+    "resolve_items_list_cache_ttl_seconds",
 ]
 

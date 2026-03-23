@@ -105,6 +105,8 @@ def parse_csv(name: str, default: str) -> list[str]:
 CORS_ALLOWED_ORIGINS = parse_csv("CORS_ALLOWED_ORIGINS", "http://localhost:8000")
 CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL", "0") in ("1", "true", "True", "yes", "on")
 ITEMS_LIST_CACHE_TTL_SECONDS = int(env("ITEMS_LIST_CACHE_TTL_SECONDS", "300"))
+ITEMS_LIST_CACHE_TTL_SEARCH_SECONDS = int(env("ITEMS_LIST_CACHE_TTL_SEARCH_SECONDS", "120"))
+ITEMS_LIST_CACHE_TTL_LARGE_PAGE_SECONDS = int(env("ITEMS_LIST_CACHE_TTL_LARGE_PAGE_SECONDS", "180"))
 
 
 CACHE_BACKEND = env("CACHE_BACKEND", "redis").lower()

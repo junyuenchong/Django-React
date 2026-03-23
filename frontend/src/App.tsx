@@ -1,119 +1,42 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { Suspense, lazy, useEffect, useState } from "react";
-import { createItem, deleteItem, fetchFromUrl, listItemsCursor, updateItem } from "./api/itemsApi";
-import type { CursorPaginatedResponse, Item } from "./types/item";
-
-type Draft = { title: string; description: string };
+import React, { Suspense, lazy } from "react";
+import { useItemsCrud } from "./hooks/useItemsCrud";
 
 const ItemForm = lazy(() => import("./components/ItemForm"));
 const ItemTable = lazy(() => import("./components/ItemTable"));
 const PaginationControls = lazy(() => import("./components/PaginationControls"));
 
+// Main page component that wires UI blocks to CRUD state/actions.
 export default function App() {
-  const [pageSize] = useState(5);
-  const [q, setQ] = useState("");
-  const [debouncedQ, setDebouncedQ] = useState("");
-  const [pageUrl, setPageUrl] = useState<string | null>(null);
+  const {
+    q,
+    setQ,
+    items,
+    loading,
+    error,
+    draft,
+    setDraft,
+    editingId,
+    setEditingId,
+    nextUrl,
+    previousUrl,
+    onNext,
+    onPrevious,
+    submit,
+    remove,
+    startEdit,
+  } = useItemsCrud(5);
 
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<Draft>({ title: "", description: "" });
-  const queryClient = useQueryClient();
-
-  // Debounce search to avoid flooding the API on every keystroke.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedQ(q);
-      setPageUrl(null);
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q]);
-
-  const listQuery = useQuery<CursorPaginatedResponse<Item>>({
-    queryKey: ["items", debouncedQ, pageUrl, pageSize],
-    queryFn: () => {
-      if (pageUrl) {
-        return fetchFromUrl<CursorPaginatedResponse<Item>>(pageUrl);
-      }
-      return listItemsCursor({ pageSize, q: debouncedQ || undefined });
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createItem,
-    onSuccess: async () => {
-      setPageUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: Draft }) => updateItem(id, payload),
-    onSuccess: async () => {
-      setPageUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteItem,
-    onSuccess: async () => {
-      setPageUrl(null);
-      await queryClient.invalidateQueries({ queryKey: ["items"] });
-    },
-  });
-
+  // Handle form submit for create/update.
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setActionError(null);
-
-    if (!draft.title.trim()) {
-      setActionError("Title cannot be empty.");
-      return;
-    }
-
-    try {
-      if (editingId == null) {
-        await createMutation.mutateAsync(draft);
-      } else {
-        await updateMutation.mutateAsync({ id: editingId, payload: draft });
-      }
-
-      setEditingId(null);
-      setDraft({ title: "", description: "" });
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : String(e));
-    }
+    await submit();
   }
 
+  // Confirm before deleting an item from the list.
   async function onDelete(id: number) {
     if (!confirm("Are you sure you want to delete this item?")) return;
-    setActionError(null);
-    try {
-      await deleteMutation.mutateAsync(id);
-      setEditingId(null);
-      setDraft({ title: "", description: "" });
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : String(e));
-    }
+    await remove(id);
   }
-
-  function startEdit(item: Item) {
-    setEditingId(item.id);
-    setDraft({ title: item.title, description: item.description });
-  }
-
-  const items = listQuery.data?.results ?? [];
-  const nextUrl = listQuery.data?.next ?? null;
-  const previousUrl = listQuery.data?.previous ?? null;
-  const queryError = listQuery.error instanceof Error ? listQuery.error.message : null;
-  const error = actionError ?? queryError;
-  const loading =
-    listQuery.isFetching ||
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    deleteMutation.isPending;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -183,12 +106,8 @@ export default function App() {
             nextUrl={nextUrl}
             previousUrl={previousUrl}
             loading={loading}
-            onNext={() => {
-              if (nextUrl) setPageUrl(nextUrl);
-            }}
-            onPrevious={() => {
-              if (previousUrl) setPageUrl(previousUrl);
-            }}
+            onNext={onNext}
+            onPrevious={onPrevious}
           />
         </Suspense>
       </div>

@@ -67,3 +67,20 @@ def test_update_invalidate_list_cache_key():
     assert resp.status_code == 200
     assert cache.get(new_key) is not None
 
+
+@pytest.mark.integration
+@pytest.mark.django_db
+def test_list_returns_etag_and_supports_304():
+    client = APIClient()
+    Item.objects.create(title="etag-item", description="d")
+
+    first = client.get("/api/items/?page_size=5")
+    assert first.status_code == 200
+    assert first["ETag"]
+
+    second = client.get(
+        "/api/items/?page_size=5",
+        HTTP_IF_NONE_MATCH=first["ETag"],
+    )
+    assert second.status_code == 304
+

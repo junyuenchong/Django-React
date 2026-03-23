@@ -2,6 +2,16 @@ import type { CursorPaginatedResponse, Item } from "../types/item";
 
 const API_BASE = (globalThis as any).__VITE_API_URL__ || "http://localhost:8000";
 
+export class ApiError extends Error {
+  status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 function toQueryString(params: Record<string, string | number | undefined>) {
   const usp = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -23,13 +33,13 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`Request failed: ${res.status} ${res.statusText}. ${text}`.trim());
+    throw new ApiError(`Request failed: ${res.status} ${res.statusText}. ${text}`.trim(), res.status);
   }
   // Be defensive: empty or non-JSON payloads should produce a clear error.
   try {
     return (await res.json()) as T;
   } catch {
-    throw new Error(`Invalid JSON response from ${url}.`);
+    throw new ApiError(`Invalid JSON response from ${url}.`);
   }
 }
 

@@ -56,6 +56,7 @@ my_project/
 │           │   ├── test_services_cache.py
 │           │   └── test_error_handling_cache.py
 │           ├── models.py            # Model layer
+│           ├── http_cache.py        # ETag/Last-Modified helpers
 │           ├── views.py             # API controller (DRF)
 │           ├── urls.py
 │           ├── serializers.py       # API schema/validation
@@ -87,6 +88,8 @@ my_project/
     └── src/
         ├── api/
         │   └── itemsApi.ts
+        ├── hooks/
+        │   └── useItemsCrud.ts
         ├── components/
         │   ├── ItemForm.tsx
         │   ├── ItemTable.tsx
@@ -98,7 +101,7 @@ my_project/
         ├── App.tsx
         ├── App.test.tsx
         ├── main.tsx
-        └── styles.css
+        └── globals.css
 ```
 
 Frontend entry points: `frontend/src/main.tsx`, `frontend/src/App.tsx`
@@ -106,6 +109,10 @@ Frontend entry points: `frontend/src/main.tsx`, `frontend/src/App.tsx`
 Frontend performance notes:
 - `main.tsx` lazy-loads `App` with `React.lazy` + `Suspense` (entry-level code splitting)
 - `App.tsx` lazy-loads heavy UI blocks (`ItemForm`, `ItemTable`, `PaginationControls`)
+- CRUD/query state is extracted into `hooks/useItemsCrud.ts` for cleaner UI components
+- React Query keeps previous page data during pagination to avoid UI flicker
+- React Query prefetches the next page for faster page navigation
+- React Query retries only server-side failures (5xx), and skips retry for 4xx errors
 - Data fetching/mutations are handled by React Query for cache + invalidation control
 
 ## Environment Variables
@@ -129,6 +136,7 @@ Key variables (backend, from `backend/.env.example`):
 - `DJANGO_DEBUG`, `DJANGO_SECRET_KEY`
 - `CORS_ALLOWED_ORIGINS`
 - `ITEMS_LIST_CACHE_TTL_SECONDS`
+- `ITEMS_LIST_CACHE_TTL_SEARCH_SECONDS`, `ITEMS_LIST_CACHE_TTL_LARGE_PAGE_SECONDS`
 
 ## How to Run Everything (Local)
 
@@ -166,8 +174,35 @@ Key variables (backend, from `backend/.env.example`):
 - Cursor pagination: stable ordering using `-id`
 - Redis caching: `GET list` caches the whole paginated response
 - Cache invalidation: `POST/PATCH/DELETE` bumps a version key so cached lists are naturally invalidated
+- Tiered TTL strategy for list cache:
+  - Search query (`q`) uses `ITEMS_LIST_CACHE_TTL_SEARCH_SECONDS`
+  - Larger page sizes use `ITEMS_LIST_CACHE_TTL_LARGE_PAGE_SECONDS`
+  - Default list uses `ITEMS_LIST_CACHE_TTL_SECONDS`
+- Conditional response caching:
+  - List endpoint returns `ETag` and `Last-Modified`
+  - Supports `If-None-Match` / `If-Modified-Since` with `304 Not Modified`
 - DB indexes: model indexes on `title` and a composite index for ordering
+- Queryset optimization entry point:
+  - `ItemRepository.base_queryset()` includes `select_related/prefetch_related` hooks for future relation-heavy models
 - Production-oriented Redis settings: configurable TTL, socket connect/read timeout, max connections, retry-on-timeout, and key prefix
+
+### N+1 Query Problem and Solution
+- What is N+1:
+  - The API runs 1 query to load a list, then runs 1 extra query per row for related data (`N` more queries).
+  - Total becomes `1 + N` queries, which gets slower as list size grows.
+- Why it matters:
+  - More DB round-trips increase latency and DB load.
+  - It becomes a bottleneck under higher traffic.
+- Current prevention in this project:
+  - `ItemRepository.base_queryset()` is the single place that builds list querysets.
+  - It already provides hooks for relation optimization:
+    - `select_related_fields`
+    - `prefetch_related_fields`
+  - The list API always goes through repository -> service -> view flow, so optimization is centralized.
+- How to apply when relations are added:
+  - Use `select_related(...)` for foreign key / one-to-one fields.
+  - Use `prefetch_related(...)` for many-to-many or reverse relations.
+  - Keep these optimizations in repository methods (not in views) for maintainability.
 
 ## Error Handling
 

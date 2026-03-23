@@ -4,14 +4,22 @@ from apps.items.models import Item
 
 
 class ItemRepository:
+    select_related_fields: tuple[str, ...] = ()
+    prefetch_related_fields: tuple[str, ...] = ()
+
     def base_queryset(self):
-        return Item.objects.all().only(
+        qs = Item.objects.all().only(
             "id",
             "title",
             "description",
             "created_at",
             "updated_at",
         )
+        if self.select_related_fields:
+            qs = qs.select_related(*self.select_related_fields)
+        if self.prefetch_related_fields:
+            qs = qs.prefetch_related(*self.prefetch_related_fields)
+        return qs
 
     def get_items_queryset(self, q: Optional[str]):
         qs = self.base_queryset()

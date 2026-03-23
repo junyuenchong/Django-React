@@ -1,7 +1,12 @@
-from django.conf import settings
 from core.pagination import ItemCursorPagination
 from rest_framework import viewsets
 
+from apps.items.http_cache import (
+    add_cache_headers,
+    build_items_etag,
+    build_items_last_modified,
+    should_return_not_modified,
+)
 from apps.items.repositories import ItemRepository
 from apps.items.serializers import ItemSerializer
 from apps.items.services import ItemService
@@ -21,15 +26,21 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         service = ItemService(repository=ItemRepository())
-        cache_timeout_seconds = int(settings.ITEMS_LIST_CACHE_TTL_SECONDS)
+        queryset = self.get_queryset()
+        etag_value = build_items_etag(request)
+        last_modified_value = build_items_last_modified(queryset)
 
-        return service.list_items(
+        not_modified = should_return_not_modified(request, queryset, etag_value, last_modified_value)
+        if not_modified is not None:
+            return not_modified
+
+        response = service.list_items(
             request=request,
-            queryset=self.get_queryset(),
+            queryset=queryset,
             view=self,
-            cache_timeout_seconds=cache_timeout_seconds,
             pagination_class=self.pagination_class,
         )
+        return add_cache_headers(response, etag_value, last_modified_value)
 
     def perform_create(self, serializer):
         instance = ItemService(repository=ItemRepository()).create_item(serializer.validated_data)
