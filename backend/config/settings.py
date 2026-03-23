@@ -117,7 +117,13 @@ if CACHE_BACKEND == "redis":
     REDIS_SOCKET_CONNECT_TIMEOUT = float(env("REDIS_SOCKET_CONNECT_TIMEOUT", "2"))
     REDIS_SOCKET_TIMEOUT = float(env("REDIS_SOCKET_TIMEOUT", "2"))
     REDIS_MAX_CONNECTIONS = int(env("REDIS_MAX_CONNECTIONS", "100"))
-    REDIS_RETRY_ON_TIMEOUT = env("REDIS_RETRY_ON_TIMEOUT", "1") in ("1", "true", "True", "yes", "on")
+    REDIS_RETRY_ON_TIMEOUT = env("REDIS_RETRY_ON_TIMEOUT", "1") in (
+        "1",
+        "true",
+        "True",
+        "yes",
+        "on",
+    )
     REDIS_KEY_PREFIX = env("REDIS_KEY_PREFIX", "react_django")
     CACHES = {
         "default": {

@@ -45,7 +45,9 @@ def add_cache_headers(response, etag_value: str, last_modified_value: str | None
     return response
 
 
-def _not_modified_response(etag_value: str, last_modified_value: str | None) -> HttpResponseNotModified:
+def _not_modified_response(
+    etag_value: str, last_modified_value: str | None
+) -> HttpResponseNotModified:
     response = HttpResponseNotModified()
     response["ETag"] = etag_value
     if last_modified_value:

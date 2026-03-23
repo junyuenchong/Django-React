@@ -30,7 +30,12 @@ class ItemViewSet(viewsets.ModelViewSet):
         etag_value = build_items_etag(request)
         last_modified_value = build_items_last_modified(queryset)
 
-        not_modified = should_return_not_modified(request, queryset, etag_value, last_modified_value)
+        not_modified = should_return_not_modified(
+            request,
+            queryset,
+            etag_value,
+            last_modified_value,
+        )
         if not_modified is not None:
             return not_modified
 
@@ -47,7 +52,10 @@ class ItemViewSet(viewsets.ModelViewSet):
         serializer.instance = instance
 
     def perform_update(self, serializer):
-        instance = ItemService(repository=ItemRepository()).update_item(serializer.instance, serializer.validated_data)
+        instance = ItemService(repository=ItemRepository()).update_item(
+            serializer.instance,
+            serializer.validated_data,
+        )
         serializer.instance = instance
 
     def perform_destroy(self, instance):
