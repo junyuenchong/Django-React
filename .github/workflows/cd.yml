@@ -12,13 +12,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate required secrets
+        run: |
+          [ -n "${{ secrets.EC2_HOST }}" ] || (echo "EC2_HOST is empty" && exit 1)
+          [ -n "${{ secrets.EC2_USER }}" ] || (echo "EC2_USER is empty" && exit 1)
+          [ -n "${{ secrets.EC2_SSH_KEY }}" ] || (echo "EC2_SSH_KEY is empty" && exit 1)
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT }}
+          port: ${{ secrets.EC2_PORT || '22' }}
           script_stop: true
           script: |
             set -e
