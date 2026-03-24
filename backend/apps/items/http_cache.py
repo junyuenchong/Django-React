@@ -1,15 +1,19 @@
 from django.http import HttpRequest, HttpResponseNotModified
+from django.db.models import QuerySet
 from django.utils import timezone
 from django.utils.http import http_date, parse_http_date_safe
 
+from apps.items.models import Item
 from apps.items.services import make_items_list_cache_key
 
 
 def build_items_etag(request: HttpRequest) -> str:
+    """Build a weak ETag value from the current list cache key."""
     return f'W/"{make_items_list_cache_key(request.query_params)}"'
 
 
-def build_items_last_modified(queryset) -> str | None:
+def build_items_last_modified(queryset: QuerySet[Item]) -> str | None:
+    """Return RFC1123 date of latest item update for Last-Modified header."""
     latest = queryset.only("updated_at").order_by("-updated_at").first()
     if latest is None:
         return None
@@ -17,8 +21,12 @@ def build_items_last_modified(queryset) -> str | None:
 
 
 def should_return_not_modified(
-    request: HttpRequest, queryset, etag_value: str, last_modified_value: str | None
+    request: HttpRequest,
+    queryset: QuerySet[Item],
+    etag_value: str,
+    last_modified_value: str | None,
 ) -> HttpResponseNotModified | None:
+    """Check conditional headers and return 304 response when data is unchanged."""
     inm = request.META.get("HTTP_IF_NONE_MATCH")
     if inm and inm == etag_value:
         return _not_modified_response(etag_value, last_modified_value)
@@ -39,6 +47,7 @@ def should_return_not_modified(
 
 
 def add_cache_headers(response, etag_value: str, last_modified_value: str | None):
+    """Attach ETag/Last-Modified headers to a normal response."""
     response["ETag"] = etag_value
     if last_modified_value:
         response["Last-Modified"] = last_modified_value
@@ -48,6 +57,7 @@ def add_cache_headers(response, etag_value: str, last_modified_value: str | None
 def _not_modified_response(
     etag_value: str, last_modified_value: str | None
 ) -> HttpResponseNotModified:
+    """Build a 304 response with cache headers."""
     response = HttpResponseNotModified()
     response["ETag"] = etag_value
     if last_modified_value:

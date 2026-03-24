@@ -2,6 +2,7 @@ import type { CursorPaginatedResponse, Item } from "../types/item";
 
 const API_BASE = (globalThis as any).__VITE_API_URL__ || "http://localhost:8000";
 
+// Typed error that carries an optional HTTP status code.
 export class ApiError extends Error {
   status?: number;
 
@@ -47,6 +48,7 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   }
 }
 
+// List items using DRF cursor pagination (supports `q`, `page_size`, and `cursor`).
 export async function listItemsCursor(params: {
   pageSize: number;
   q?: string;
@@ -60,10 +62,12 @@ export async function listItemsCursor(params: {
   return apiJson<CursorPaginatedResponse<Item>>(url);
 }
 
+// Fetch a paginated response using a `next`/`previous` URL returned by the API.
 export async function fetchFromUrl<T>(url: string): Promise<T> {
   return apiJson<T>(url);
 }
 
+// Create a new item.
 export async function createItem(payload: { title: string; description: string }): Promise<Item> {
   return apiJson<Item>(`${API_BASE}/api/items/`, {
     method: "POST",
@@ -71,6 +75,7 @@ export async function createItem(payload: { title: string; description: string }
   });
 }
 
+// Update an existing item.
 export async function updateItem(
   id: number,
   payload: { title: string; description: string },
@@ -81,6 +86,7 @@ export async function updateItem(
   });
 }
 
+// Delete an item by id.
 export async function deleteItem(id: number): Promise<void> {
   await apiJson<void>(`${API_BASE}/api/items/${id}/`, { method: "DELETE" });
 }

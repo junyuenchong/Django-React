@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useCallback, useMemo } from "react";
+import React, { Suspense, lazy } from "react";
 import { useItemsCrud } from "./hooks/useItemsCrud";
 
 const ItemForm = lazy(() => import("./components/ItemForm"));
@@ -27,28 +27,25 @@ export default function App() {
   } = useItemsCrud(10);
 
   // Handle form submit for create/update.
-  const onSubmit = useCallback(async (e: React.FormEvent) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     await submit();
-  }, [submit]);
+  }
 
   // Confirm before deleting an item from the list.
-  const onDelete = useCallback(async (id: number) => {
+  async function onDelete(id: number) {
     if (!confirm("Are you sure you want to delete this item?")) return;
     await remove(id);
-  }, [remove]);
+  }
 
-  const onReset = useCallback(() => {
+  function onReset() {
     setEditingId(null);
     setDraft({ title: "", description: "" });
-  }, [setDraft, setEditingId]);
+  }
 
-  const onSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value),
-    [setQ],
-  );
-
-  const visibleCount = useMemo(() => items.length, [items]);
+  function onSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setQ(e.target.value);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,7 +59,7 @@ export default function App() {
               </p>
             </div>
             <div className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{visibleCount}</span> items on this view
+              Showing <span className="font-semibold">{items.length}</span> items on this view
             </div>
           </div>
         </header>

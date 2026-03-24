@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ApiError,
   createItem,
@@ -22,7 +22,6 @@ export function useItemsCrud(pageSize = 5) {
   const [draft, setDraft] = useState<Draft>({ title: "", description: "" });
 
   const queryClient = useQueryClient();
-  const searchCache = useMemo(() => new Map<string, Item[]>(), []);
 
   // Retry only transient server-side failures.
   const shouldRetryRequest = useCallback((failureCount: number, error: unknown) => {
@@ -82,32 +81,7 @@ export function useItemsCrud(pageSize = 5) {
 
   const nextUrl = listQuery.data?.next ?? null;
   const previousUrl = listQuery.data?.previous ?? null;
-  const rawItems = listQuery.data?.results ?? [];
-
-  // Memoize search results for quick repeated keyword filtering on the current page.
-  const items = useMemo(() => {
-    const keyword = q.trim().toLowerCase();
-    if (!keyword) return rawItems;
-
-    const cacheKey = `${pageUrl ?? "first"}|${keyword}|${rawItems.length}`;
-    const cached = searchCache.get(cacheKey);
-    if (cached) return cached;
-
-    const filtered = rawItems.filter((item) => {
-      const title = item.title.toLowerCase();
-      const description = item.description.toLowerCase();
-      return title.includes(keyword) || description.includes(keyword);
-    });
-
-    searchCache.set(cacheKey, filtered);
-
-    // Prevent unbounded growth in long sessions.
-    if (searchCache.size > 100) {
-      searchCache.clear();
-    }
-
-    return filtered;
-  }, [pageUrl, q, rawItems, searchCache]);
+  const items = listQuery.data?.results ?? [];
 
   // Prefetch next page so pagination feels instant.
   useEffect(() => {

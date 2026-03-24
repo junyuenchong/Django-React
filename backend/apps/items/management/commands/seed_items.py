@@ -4,9 +4,12 @@ from apps.items.seeder.items import seed_items
 
 
 class Command(BaseCommand):
+    """Management command for seeding demo Item data."""
+
     help = "Seed demo data for Item CRUD"
 
     def add_arguments(self, parser):
+        """Define command-line flags for seed size and behavior."""
         parser.add_argument(
             "--count",
             type=int,
@@ -21,6 +24,7 @@ class Command(BaseCommand):
         parser.add_argument("--seed", type=int, default=42, help="Deterministic random seed")
 
     def handle(self, *args, **options):
+        """Run seeding and print a success summary."""
         count = options["count"]
         clear = options["clear"]
         seed = options["seed"]

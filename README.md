@@ -9,7 +9,7 @@ Single-page React frontend + Django REST API backend with PostgreSQL and Redis c
 - Backend: Django, Django REST Framework, django-filter
 - Database: PostgreSQL
 - Cache: Redis (via `django-redis`)
-- DevOps: Docker Compose, GitHub Actions CI/CD
+- DevOps: Docker Compose, GitHub Actions CI/CD, AWS EC2
 - Testing: pytest + pytest-django
 
 ## Services
@@ -107,9 +107,11 @@ my_project/
 Frontend entry points: `frontend/src/main.tsx`, `frontend/src/App.tsx`
 
 Frontend performance notes:
+
 - `main.tsx` lazy-loads `App` with `React.lazy` + `Suspense` (entry-level code splitting)
 - `App.tsx` lazy-loads heavy UI blocks (`ItemForm`, `ItemTable`, `PaginationControls`)
 - CRUD/query state is extracted into `hooks/useItemsCrud.ts` for cleaner UI components
+- The item table renders rows in ascending `id` order for a predictable 1,2,3-style view
 - React Query keeps previous page data during pagination to avoid UI flicker
 - React Query prefetches the next page for faster page navigation
 - React Query retries only server-side failures (5xx), and skips retry for 4xx errors
@@ -187,6 +189,7 @@ Key variables (backend, from `backend/.env.example`):
 - Production-oriented Redis settings: configurable TTL, socket connect/read timeout, max connections, retry-on-timeout, and key prefix
 
 ### N+1 Query Problem and Solution
+
 - What is N+1:
   - The API runs 1 query to load a list, then runs 1 extra query per row for related data (`N` more queries).
   - Total becomes `1 + N` queries, which gets slower as list size grows.
@@ -209,6 +212,7 @@ Key variables (backend, from `backend/.env.example`):
 - Global DRF exception handler returns a consistent JSON shape:
   `{"error": {"type": "...", "message": "..."}}`
 - Redis/cache failures are handled gracefully (service falls back to no-cache mode so CRUD still works)
+- Backend service layer uses explicit typing (avoids `Any`) and defensive cache helpers to keep runtime behavior predictable
 
 ## Testing
 
@@ -256,25 +260,72 @@ Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 - `EC2_SSH_KEY`: private key content (`.pem` file text)
 - `EC2_PORT`: SSH port (usually `22`)
 
-### AWS EC2 Deployment Setup (One-Time)
+### AWS EC2 Ubuntu Setup (Step-by-Step)
 
-1. Launch EC2 (Ubuntu), then allow inbound ports:
-   - `22` (SSH)
-   - `8000` (API access for this demo)
-2. Install Docker + Docker Compose on EC2.
-3. Clone this repository on EC2:
-   - `git clone https://github.com/junyuenchong/Django-React.git ~/Django-React`
-4. Create backend env file:
-   - `cd ~/Django-React/backend`
-   - `cp .env.example .env`
-5. Update required backend values in `backend/.env` (minimum):
+1. Connect to Ubuntu EC2:
+
+   ```bash
+   chmod 400 ~/path/to/SSH.pem
+   ssh -i ~/path/to/SSH.pem ubuntu@13.215.157.131
+   ```
+
+2. Update packages and install Docker:
+
+   ```bash
+   sudo apt update
+   sudo apt install -y ca-certificates curl gnupg lsb-release
+   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+   sudo apt update
+   sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+   sudo usermod -aG docker $USER
+   ```
+
+3. Reconnect SSH (required after group change), then verify Docker:
+
+   ```bash
+   exit
+   ssh -i ~/path/to/SSH.pem ubuntu@13.215.157.131
+   docker --version
+   docker compose version
+   ```
+
+4. Clone repository on EC2:
+
+   ```bash
+   git clone https://github.com/junyuenchong/Django-React.git ~/Django-React
+   cd ~/Django-React/backend
+   ```
+
+5. Create backend env and set minimum values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Update `backend/.env`:
    - `DJANGO_ALLOWED_HOSTS=13.215.157.131,localhost,127.0.0.1`
    - `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://192.168.1.3:5173,http://26.248.135.138:5173`
-6. First deploy on EC2:
-   - `docker compose up -d --build`
-7. Verify backend health on EC2:
-   - `curl -i http://127.0.0.1:8000/healthz`
-   - Expected: `HTTP 200` and `{"status":"ok"}`
+
+6. Deploy backend stack:
+
+   ```bash
+   cd ~/Django-React/backend
+   docker compose up -d --build
+   docker compose ps
+   ```
+
+7. Verify health:
+
+   ```bash
+   curl -i http://127.0.0.1:8000/healthz
+   ```
+
+   Expected: `HTTP 200` and `{"status":"ok"}`.
+
+8. AWS Security Group (EC2 inbound rules):
+   - `22` (SSH)
+   - `8000` (API access for this demo)
 
 ### Repository Variables Fallback (Optional)
 

@@ -5,6 +5,7 @@ from apps.items.models import Item
 
 
 def _sample_titles() -> list[str]:
+    """Return a reusable list of deterministic demo title prefixes."""
     return [
         "alpha",
         "beta",
@@ -48,5 +49,6 @@ def seed_items(*, count: int = 20, clear: bool = False, seed: int = 42) -> int:
 
 
 def iter_item_ids() -> Iterable[int]:
+    """Yield item IDs in descending order (newest first)."""
     return Item.objects.order_by("-id").values_list("id", flat=True)
 
