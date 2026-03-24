@@ -256,11 +256,46 @@ Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 - `EC2_SSH_KEY`: private key content (`.pem` file text)
 - `EC2_PORT`: SSH port (usually `22`)
 
+### AWS EC2 Deployment Setup (One-Time)
+
+1. Launch EC2 (Ubuntu), then allow inbound ports:
+   - `22` (SSH)
+   - `8000` (API access for this demo)
+2. Install Docker + Docker Compose on EC2.
+3. Clone this repository on EC2:
+   - `git clone https://github.com/junyuenchong/Django-React.git ~/Django-React`
+4. Create backend env file:
+   - `cd ~/Django-React/backend`
+   - `cp .env.example .env`
+5. Update required backend values in `backend/.env` (minimum):
+   - `DJANGO_ALLOWED_HOSTS=13.215.157.131,localhost,127.0.0.1`
+   - `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://192.168.1.3:5173,http://26.248.135.138:5173`
+6. First deploy on EC2:
+   - `docker compose up -d --build`
+7. Verify backend health on EC2:
+   - `curl -i http://127.0.0.1:8000/healthz`
+   - Expected: `HTTP 200` and `{"status":"ok"}`
+
+### Repository Variables Fallback (Optional)
+
+The CD workflow supports both `secrets.*` and `vars.*` values:
+
+- Primary source: `Repository secrets`
+- Fallback source: `Repository variables`
+
+Supported keys:
+
+- `EC2_HOST`
+- `EC2_USER`
+- `EC2_SSH_KEY`
+- `EC2_PORT`
+
 ### Notes
 
 - This CD flow is backend-focused and uses `backend/docker-compose.yml`.
 - Ensure your EC2 instance already has Docker + Docker Compose installed.
 - Ensure repository path on EC2 is `~/Django-React` (or update `cd.yml` script path).
+- If deployment fails with `EC2_HOST is empty`, set `EC2_HOST` in repository secrets or variables and rerun the workflow.
 
 ## Code Quality Gates (Pre-commit / Hooks)
 
