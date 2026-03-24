@@ -2,14 +2,16 @@ import React from "react";
 
 type Draft = { title: string; description: string };
 
-export default function ItemForm(props: {
+type ItemFormProps = {
   loading: boolean;
   editingId: number | null;
   draft: Draft;
   onDraftChange: (next: Draft) => void;
   onSubmit: (e: React.FormEvent) => void;
   onReset: () => void;
-}) {
+};
+
+function ItemForm(props: ItemFormProps) {
   const { loading, editingId, draft, onDraftChange, onSubmit, onReset } = props;
 
   return (
@@ -57,3 +59,5 @@ export default function ItemForm(props: {
     </form>
   );
 }
+
+export default React.memo(ItemForm);

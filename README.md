@@ -9,7 +9,7 @@ Single-page React frontend + Django REST API backend with PostgreSQL and Redis c
 - Backend: Django, Django REST Framework, django-filter
 - Database: PostgreSQL
 - Cache: Redis (via `django-redis`)
-- DevOps: Docker Compose, GitHub Actions CI
+- DevOps: Docker Compose, GitHub Actions CI/CD
 - Testing: pytest + pytest-django
 
 ## Services
@@ -234,6 +234,33 @@ Workflow: `.github/workflows/ci.yml`
 - Runs:
   - `pytest -m unit`
   - `pytest -m integration`
+
+## CD (Auto Deploy to EC2)
+
+Workflow: `.github/workflows/cd.yml`
+
+When code is pushed to `main`, GitHub Actions connects to your EC2 host over SSH and deploys backend changes automatically:
+
+- `cd ~/Django-React`
+- `git fetch --all && git checkout main && git pull origin main`
+- `cd backend`
+- `docker compose up -d --build backend`
+- print container status and recent backend logs
+
+### Required GitHub Secrets
+
+Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
+
+- `EC2_HOST`: your EC2 public IPv4 (example: `13.215.157.131`)
+- `EC2_USER`: SSH user (usually `ubuntu`)
+- `EC2_SSH_KEY`: private key content (`.pem` file text)
+- `EC2_PORT`: SSH port (usually `22`)
+
+### Notes
+
+- This CD flow is backend-focused and uses `backend/docker-compose.yml`.
+- Ensure your EC2 instance already has Docker + Docker Compose installed.
+- Ensure repository path on EC2 is `~/Django-React` (or update `cd.yml` script path).
 
 ## Code Quality Gates (Pre-commit / Hooks)
 

@@ -1,12 +1,14 @@
 import React from "react";
 import type { Item } from "../types/item";
 
-export default function ItemTable(props: {
+type ItemTableProps = {
   items: Item[];
   loading: boolean;
   onEdit: (item: Item) => void;
   onDelete: (id: number) => void;
-}) {
+};
+
+function ItemTable(props: ItemTableProps) {
   const { items, loading, onEdit, onDelete } = props;
 
   return (
@@ -81,3 +83,5 @@ export default function ItemTable(props: {
     </table>
   );
 }
+
+export default React.memo(ItemTable);

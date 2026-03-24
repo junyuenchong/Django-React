@@ -1,12 +1,14 @@
 import React from "react";
 
-export default function PaginationControls(props: {
+type PaginationControlsProps = {
   nextUrl: string | null;
   previousUrl: string | null;
   loading: boolean;
   onNext: () => void;
   onPrevious: () => void;
-}) {
+};
+
+function PaginationControls(props: PaginationControlsProps) {
   const { nextUrl, previousUrl, loading, onNext, onPrevious } = props;
 
   return (
@@ -31,3 +33,5 @@ export default function PaginationControls(props: {
     </div>
   );
 }
+
+export default React.memo(PaginationControls);

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ApiError,
   createItem,
@@ -22,12 +22,13 @@ export function useItemsCrud(pageSize = 5) {
   const [draft, setDraft] = useState<Draft>({ title: "", description: "" });
 
   const queryClient = useQueryClient();
+  const searchCache = useMemo(() => new Map<string, Item[]>(), []);
 
   // Retry only transient server-side failures.
-  const shouldRetryRequest = (failureCount: number, error: unknown) => {
+  const shouldRetryRequest = useCallback((failureCount: number, error: unknown) => {
     if (!(error instanceof ApiError) || !error.status) return false;
     return error.status >= 500 && failureCount < 2;
-  };
+  }, []);
 
   // Debounce search input to avoid frequent API calls.
   useEffect(() => {
@@ -81,7 +82,32 @@ export function useItemsCrud(pageSize = 5) {
 
   const nextUrl = listQuery.data?.next ?? null;
   const previousUrl = listQuery.data?.previous ?? null;
-  const items = listQuery.data?.results ?? [];
+  const rawItems = listQuery.data?.results ?? [];
+
+  // Memoize search results for quick repeated keyword filtering on the current page.
+  const items = useMemo(() => {
+    const keyword = q.trim().toLowerCase();
+    if (!keyword) return rawItems;
+
+    const cacheKey = `${pageUrl ?? "first"}|${keyword}|${rawItems.length}`;
+    const cached = searchCache.get(cacheKey);
+    if (cached) return cached;
+
+    const filtered = rawItems.filter((item) => {
+      const title = item.title.toLowerCase();
+      const description = item.description.toLowerCase();
+      return title.includes(keyword) || description.includes(keyword);
+    });
+
+    searchCache.set(cacheKey, filtered);
+
+    // Prevent unbounded growth in long sessions.
+    if (searchCache.size > 100) {
+      searchCache.clear();
+    }
+
+    return filtered;
+  }, [pageUrl, q, rawItems, searchCache]);
 
   // Prefetch next page so pagination feels instant.
   useEffect(() => {
@@ -103,7 +129,7 @@ export function useItemsCrud(pageSize = 5) {
   const error = actionError ?? queryError;
 
   // Submit create/update based on current edit mode.
-  async function submit() {
+  const submit = useCallback(async () => {
     setActionError(null);
     if (!draft.title.trim()) {
       setActionError("Title cannot be empty.");
@@ -121,10 +147,10 @@ export function useItemsCrud(pageSize = 5) {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e));
     }
-  }
+  }, [createMutation, draft, editingId, updateMutation]);
 
   // Delete one item and reset editing state.
-  async function remove(id: number) {
+  const remove = useCallback(async (id: number) => {
     setActionError(null);
     try {
       await deleteMutation.mutateAsync(id);
@@ -133,13 +159,21 @@ export function useItemsCrud(pageSize = 5) {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e));
     }
-  }
+  }, [deleteMutation]);
 
   // Fill form with selected item for editing.
-  function startEdit(item: Item) {
+  const startEdit = useCallback((item: Item) => {
     setEditingId(item.id);
     setDraft({ title: item.title, description: item.description });
-  }
+  }, []);
+
+  const onNext = useCallback(() => {
+    if (nextUrl) setPageUrl(nextUrl);
+  }, [nextUrl]);
+
+  const onPrevious = useCallback(() => {
+    if (previousUrl) setPageUrl(previousUrl);
+  }, [previousUrl]);
 
   return {
     q,
@@ -153,8 +187,8 @@ export function useItemsCrud(pageSize = 5) {
     setEditingId,
     nextUrl,
     previousUrl,
-    onNext: () => nextUrl && setPageUrl(nextUrl),
-    onPrevious: () => previousUrl && setPageUrl(previousUrl),
+    onNext,
+    onPrevious,
     submit,
     remove,
     startEdit,

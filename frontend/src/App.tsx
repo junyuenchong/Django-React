@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useCallback, useMemo } from "react";
 import { useItemsCrud } from "./hooks/useItemsCrud";
 
 const ItemForm = lazy(() => import("./components/ItemForm"));
@@ -24,19 +24,31 @@ export default function App() {
     submit,
     remove,
     startEdit,
-  } = useItemsCrud(5);
+  } = useItemsCrud(10);
 
   // Handle form submit for create/update.
-  async function onSubmit(e: React.FormEvent) {
+  const onSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     await submit();
-  }
+  }, [submit]);
 
   // Confirm before deleting an item from the list.
-  async function onDelete(id: number) {
+  const onDelete = useCallback(async (id: number) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
     await remove(id);
-  }
+  }, [remove]);
+
+  const onReset = useCallback(() => {
+    setEditingId(null);
+    setDraft({ title: "", description: "" });
+  }, [setDraft, setEditingId]);
+
+  const onSearchChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setQ(e.target.value),
+    [setQ],
+  );
+
+  const visibleCount = useMemo(() => items.length, [items]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -50,7 +62,7 @@ export default function App() {
               </p>
             </div>
             <div className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{items.length}</span> items
+              Showing <span className="font-semibold">{visibleCount}</span> items on this view
             </div>
           </div>
         </header>
@@ -62,7 +74,7 @@ export default function App() {
               <input
                 className="border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-96"
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={onSearchChange}
                 placeholder="e.g. hello"
               />
             </label>
@@ -78,10 +90,7 @@ export default function App() {
                 draft={draft}
                 onDraftChange={setDraft}
                 onSubmit={onSubmit}
-                onReset={() => {
-                  setEditingId(null);
-                  setDraft({ title: "", description: "" });
-                }}
+                onReset={onReset}
               />
             </Suspense>
           </div>
