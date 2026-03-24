@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.utils.http import http_date, parse_http_date_safe
 
 from apps.items.models import Item
-from apps.items.services import make_items_list_cache_key
+from apps.items.helpers.list_cache import make_items_list_cache_key
 
 
 def build_items_etag(request: HttpRequest) -> str:
