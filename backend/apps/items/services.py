@@ -16,6 +16,7 @@ from apps.items.helpers.list_cache import (
     bump_items_list_cache_version,
     cache_get,
     cache_set,
+    get_items_list_cache_version,
     make_items_list_cache_key,
     resolve_items_list_cache_ttl_seconds,
 )
@@ -127,6 +128,7 @@ __all__ = [
     "ItemMutationService",
     "ItemService",
     "bump_items_list_cache_version",
+    "get_items_list_cache_version",
     "make_items_list_cache_key",
     "resolve_items_list_cache_ttl_seconds",
 ]
