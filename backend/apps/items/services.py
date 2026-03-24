@@ -12,7 +12,6 @@ from apps.items.models import Item
 from apps.items.repositories import ItemRepository
 from apps.items.serializers import ItemSerializer
 from apps.items.helpers.list_cache import (
-    QueryParamsLike,
     bump_items_list_cache_version,
     cache_get,
     cache_set,

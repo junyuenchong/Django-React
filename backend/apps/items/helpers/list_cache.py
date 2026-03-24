@@ -1,5 +1,5 @@
 import hashlib
-from typing import Mapping, Optional, Protocol
+from typing import Optional, Protocol
 
 from django.conf import settings
 from django.core.cache import cache
