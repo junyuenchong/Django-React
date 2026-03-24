@@ -255,7 +255,7 @@ When code is pushed to `main`, GitHub Actions connects to your EC2 host over SSH
 
 Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 
-- `EC2_HOST`: your EC2 public IPv4 (example: `13.215.157.131`)
+- `EC2_HOST`: your EC2 public IPv4 (example: `47.131.86.17`)
 - `EC2_USER`: SSH user (usually `ubuntu`)
 - `EC2_SSH_KEY`: private key content (`.pem` file text)
 - `EC2_PORT`: SSH port (usually `22`)
@@ -265,8 +265,8 @@ Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 1. Connect to Ubuntu EC2:
 
    ```bash
-   chmod 400 ~/path/to/SSH.pem
-   ssh -i ~/path/to/SSH.pem ubuntu@13.215.157.131
+   chmod 400 ~/.ssh/SSH.pem
+   ssh -i ~/.ssh/SSH.pem ubuntu@47.131.86.17
    ```
 
 2. Update packages and install Docker:
@@ -285,7 +285,7 @@ Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
 
    ```bash
    exit
-   ssh -i ~/path/to/SSH.pem ubuntu@13.215.157.131
+   ssh -i ~/.ssh/SSH.pem ubuntu@47.131.86.17
    docker --version
    docker compose version
    ```
@@ -304,7 +304,7 @@ Add these in `GitHub repo -> Settings -> Secrets and variables -> Actions`:
    ```
 
    Update `backend/.env`:
-   - `DJANGO_ALLOWED_HOSTS=13.215.157.131,localhost,127.0.0.1`
+   - `DJANGO_ALLOWED_HOSTS=47.131.86.17,localhost,127.0.0.1`
    - `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://192.168.1.3:5173,http://26.248.135.138:5173`
 
 6. Deploy backend stack:
