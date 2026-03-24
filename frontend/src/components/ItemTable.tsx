@@ -3,13 +3,14 @@ import type { Item } from "../types/item";
 
 type ItemTableProps = {
   items: Item[];
+  rowStartIndex: number;
   loading: boolean;
   onEdit: (item: Item) => void;
   onDelete: (id: number) => void;
 };
 
 function ItemTable(props: ItemTableProps) {
-  const { items, loading, onEdit, onDelete } = props;
+  const { items, rowStartIndex, loading, onEdit, onDelete } = props;
   const sortedItems = React.useMemo(() => [...items].sort((a, b) => a.id - b.id), [items]);
 
   return (
@@ -17,7 +18,7 @@ function ItemTable(props: ItemTableProps) {
       <thead className="bg-gray-50">
         <tr>
           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
-            ID
+            No.
           </th>
           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
             Title
@@ -47,9 +48,9 @@ function ItemTable(props: ItemTableProps) {
             </td>
           </tr>
         ) : (
-          sortedItems.map((it) => (
+          sortedItems.map((it, idx) => (
             <tr key={it.id} className="hover:bg-gray-50">
-              <td className="px-4 py-3 align-top text-sm text-gray-900">{it.id}</td>
+              <td className="px-4 py-3 align-top text-sm text-gray-900">{rowStartIndex + idx + 1}</td>
               <td className="px-4 py-3 align-top text-sm text-gray-900 max-w-[220px] break-words">
                 {it.title}
               </td>

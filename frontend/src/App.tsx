@@ -17,6 +17,7 @@ export default function App() {
     setDraft,
     editingId,
     setEditingId,
+    rowStartIndex,
     nextUrl,
     previousUrl,
     onNext,
@@ -102,7 +103,13 @@ export default function App() {
         <section className="mb-5">
           <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-0 overflow-hidden">
             <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading table...</div>}>
-              <ItemTable items={items} loading={loading} onEdit={startEdit} onDelete={onDelete} />
+              <ItemTable
+                items={items}
+                rowStartIndex={rowStartIndex}
+                loading={loading}
+                onEdit={startEdit}
+                onDelete={onDelete}
+              />
             </Suspense>
           </div>
         </section>

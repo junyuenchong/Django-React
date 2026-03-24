@@ -17,6 +17,7 @@ export function useItemsCrud(pageSize = 5) {
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [pageUrl, setPageUrl] = useState<string | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
   const [actionError, setActionError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState<Draft>({ title: "", description: "" });
@@ -34,6 +35,7 @@ export function useItemsCrud(pageSize = 5) {
     const t = setTimeout(() => {
       setDebouncedQ(q);
       setPageUrl(null);
+      setPageNumber(1);
     }, 250);
     return () => clearTimeout(t);
   }, [q]);
@@ -55,6 +57,7 @@ export function useItemsCrud(pageSize = 5) {
     retry: shouldRetryRequest,
     onSuccess: async () => {
       setPageUrl(null);
+      setPageNumber(1);
       await queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });
@@ -65,6 +68,7 @@ export function useItemsCrud(pageSize = 5) {
     retry: shouldRetryRequest,
     onSuccess: async () => {
       setPageUrl(null);
+      setPageNumber(1);
       await queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });
@@ -75,6 +79,7 @@ export function useItemsCrud(pageSize = 5) {
     retry: shouldRetryRequest,
     onSuccess: async () => {
       setPageUrl(null);
+      setPageNumber(1);
       await queryClient.invalidateQueries({ queryKey: ["items"] });
     },
   });
@@ -142,12 +147,18 @@ export function useItemsCrud(pageSize = 5) {
   }, []);
 
   const onNext = useCallback(() => {
-    if (nextUrl) setPageUrl(nextUrl);
+    if (!nextUrl) return;
+    setPageUrl(nextUrl);
+    setPageNumber((n) => n + 1);
   }, [nextUrl]);
 
   const onPrevious = useCallback(() => {
-    if (previousUrl) setPageUrl(previousUrl);
+    if (!previousUrl) return;
+    setPageUrl(previousUrl);
+    setPageNumber((n) => (n > 1 ? n - 1 : 1));
   }, [previousUrl]);
+
+  const rowStartIndex = (pageNumber - 1) * pageSize;
 
   return {
     q,
@@ -159,6 +170,7 @@ export function useItemsCrud(pageSize = 5) {
     setDraft,
     editingId,
     setEditingId,
+    rowStartIndex,
     nextUrl,
     previousUrl,
     onNext,
