@@ -47,7 +47,14 @@ def get_items_list_cache_version() -> int:
     if version is None:
         version = 1
         _cache_set(ITEMS_CACHE_VERSION_KEY, version, None)
-    return int(version)
+    if isinstance(version, int):
+        return version
+    if isinstance(version, str):
+        try:
+            return int(version)
+        except ValueError:
+            return 1
+    return 1
 
 # Increment the cache version to invalidate list cache
 def bump_items_list_cache_version() -> None:
