@@ -10,21 +10,26 @@ jobs:
   deploy-backend:
     name: Deploy Backend To EC2
     runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST || vars.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER || vars.EC2_USER }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY || vars.EC2_SSH_KEY }}
+      EC2_PORT: ${{ secrets.EC2_PORT || vars.EC2_PORT || '22' }}
 
     steps:
-      - name: Validate required secrets
+      - name: Validate required connection values
         run: |
-          [ -n "${{ secrets.EC2_HOST }}" ] || (echo "EC2_HOST is empty" && exit 1)
-          [ -n "${{ secrets.EC2_USER }}" ] || (echo "EC2_USER is empty" && exit 1)
-          [ -n "${{ secrets.EC2_SSH_KEY }}" ] || (echo "EC2_SSH_KEY is empty" && exit 1)
+          [ -n "${EC2_HOST}" ] || (echo "EC2_HOST is empty (secrets or vars)" && exit 1)
+          [ -n "${EC2_USER}" ] || (echo "EC2_USER is empty (secrets or vars)" && exit 1)
+          [ -n "${EC2_SSH_KEY}" ] || (echo "EC2_SSH_KEY is empty (secrets or vars)" && exit 1)
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || '22' }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USER }}
+          key: ${{ env.EC2_SSH_KEY }}
+          port: ${{ env.EC2_PORT }}
           script_stop: true
           script: |
             set -e
