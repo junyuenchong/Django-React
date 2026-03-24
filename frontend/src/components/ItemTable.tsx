@@ -10,6 +10,7 @@ type ItemTableProps = {
 
 function ItemTable(props: ItemTableProps) {
   const { items, loading, onEdit, onDelete } = props;
+  const sortedItems = React.useMemo(() => [...items].sort((a, b) => a.id - b.id), [items]);
 
   return (
     <table className="w-full border-collapse">
@@ -46,7 +47,7 @@ function ItemTable(props: ItemTableProps) {
             </td>
           </tr>
         ) : (
-          items.map((it) => (
+          sortedItems.map((it) => (
             <tr key={it.id} className="hover:bg-gray-50">
               <td className="px-4 py-3 align-top text-sm text-gray-900">{it.id}</td>
               <td className="px-4 py-3 align-top text-sm text-gray-900 max-w-[220px] break-words">
